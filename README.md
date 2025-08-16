@@ -1,12 +1,46 @@
-# React + Vite
+Arcadia — Neon Glide
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A tiny, stylish arcade shooter built with React + Vite + Tailwind CSS and a handcrafted Canvas + WebAudio engine. No game frameworks. Mobile-friendly, full-screen, buttery controls, and a clean neon UI.
 
-Currently, two official plugins are available:
+✨ Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Fast arcade loop: dodge, collect, and shoot.
 
-## Expanding the ESLint configuration
+5 Modes: Endless, Onslaught, Bullet Hell, Waves, Zen.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+3 Difficulties: Chill, Normal, Hyper (caps speed for visibility).
+
+Power-ups: ❤️ Heal, 🕶 Stealth, ✴ Aura blast.
+
+Mobile controls: on-screen LEFT / FIRE / RIGHT.
+
+Full-height canvas: true 100vh on phones, laptops, TVs.
+
+Landing (Home) screen: pick mode & difficulty before play.
+
+SFX toggle: crisp WebAudio pew/boom/pickup/hurt/click (no assets).
+
+Best score per mode: stored in localStorage.
+
+Space/Enter/P support with page-scroll blocking (no more jumping page).
+
+🧰 Tech Stack
+
+React 18 + Vite
+
+Tailwind CSS for styling
+
+HTML5 Canvas (no Pixi/Three/etc.)
+
+WebAudio API for sound effects
+
+🚀 Quickstart
+# install
+npm i
+
+# dev
+npm run dev
+
+# production build
+npm run build
+npm run preview
