@@ -55,8 +55,9 @@ export default function App() {
       <header ref={headerRef} className="sticky top-0 z-10 backdrop-blur bg-slate-950/70 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-pink-500/70 to-sky-400/70 flex items-center justify-center shadow-glow">
-              <span className="text-xl font-bold">🚀</span>
+            <div className="w-9 h-9 bg-gradient-to-br from-pink-500/70 to-sky-400/70 flex items-center justify-center shadow-glow">
+              {/* <span className="text-xl font-bold">🚀</span> */}
+              <img src="public/arcadiaNeologo.jpeg" alt="Arcadia Neo Logo" />
             </div>
             <h1 className="text-base sm:text-lg font-semibold tracking-tight">Neo Glide</h1>
           </div>
@@ -149,8 +150,9 @@ export default function App() {
           <div className="absolute inset-0 grid place-items-center bg-black/60 backdrop-blur-sm p-4">
             <div className="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500/70 to-sky-400/70 flex items-center justify-center shadow-glow">
-                  <span className="text-xl font-bold">🚀</span>
+                <div className="w-9 h-9 bg-gradient-to-br from-pink-500/70 to-sky-400/70 flex items-center justify-center shadow-glow">
+                  {/* <span className="text-xl font-bold">🚀</span> */}
+                  <img src="public/arcadiaNeologo.jpeg" alt="Arcadia Neo Logo" />
                 </div>
                 <h2 className="text-lg font-semibold">Neo Glide</h2>
               </div>
