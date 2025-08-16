@@ -4,7 +4,7 @@ import React, {
 } from 'react'
 
 /**
- * Arcadia — Neon Glide (SFX edition)
+ * Arcadia - Neo Glide (SFX edition)
  * - WebAudio SFX: laser, explosion, pickup, power-up, hurt, click.
  * - Navbar SFX toggle (sfxEnabled prop).
  * - Audio unlock on first user gesture (exposed via ref.unlockAudio()).
@@ -542,7 +542,7 @@ const Arcadia = forwardRef(function Arcadia({
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
         ctx.fillStyle = 'rgba(2,6,23,0.6)'; ctx.fillRect(0, 0, c.width, c.height)
         ctx.fillStyle = '#e2e8f0'; ctx.textAlign = 'center'; ctx.font = '600 28px system-ui,-apple-system,Segoe UI'
-        ctx.fillText('Paused — press Space or P to resume', c.clientWidth / 2, c.clientHeight / 2)
+        ctx.fillText('Paused - press Space or P to resume', c.clientWidth / 2, c.clientHeight / 2)
     }
 
     // helpers

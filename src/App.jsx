@@ -58,7 +58,7 @@ export default function App() {
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-pink-500/70 to-sky-400/70 flex items-center justify-center shadow-glow">
               <span className="text-xl font-bold">🚀</span>
             </div>
-            <h1 className="text-base sm:text-lg font-semibold tracking-tight">Arcadia — Neon Glide</h1>
+            <h1 className="text-base sm:text-lg font-semibold tracking-tight">Arcadia - Neo Glide</h1>
           </div>
 
           {/* Right side controls */}
@@ -128,7 +128,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* GAME AREA — 100vh minus navbar */}
+      {/* GAME AREA - 100vh minus navbar */}
       <main
         className="relative w-full"
         style={{ minHeight: 'calc(var(--vh, 1vh) * 100 - var(--header-h, 64px))' }}
@@ -152,7 +152,7 @@ export default function App() {
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500/70 to-sky-400/70 flex items-center justify-center shadow-glow">
                   <span className="text-xl font-bold">🚀</span>
                 </div>
-                <h2 className="text-lg font-semibold">Arcadia — Neon Glide</h2>
+                <h2 className="text-lg font-semibold">Arcadia - Neo Glide</h2>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

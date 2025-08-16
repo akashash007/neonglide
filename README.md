@@ -1,4 +1,4 @@
-Arcadia — Neon Glide
+Neo Glide
 
 A tiny, stylish arcade shooter built with React + Vite + Tailwind CSS and a handcrafted Canvas + WebAudio engine. No game frameworks. Mobile-friendly, full-screen, buttery controls, and a clean neon UI.
 
