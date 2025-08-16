@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import Arcadia from '../widgets/Arcadia.jsx'
+import Arcadia from './widgets/Arcadia.jsx'
 
 export default function App() {
   const [difficulty, setDifficulty] = useState('normal')
@@ -58,7 +58,7 @@ export default function App() {
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-pink-500/70 to-sky-400/70 flex items-center justify-center shadow-glow">
               <span className="text-xl font-bold">🚀</span>
             </div>
-            <h1 className="text-base sm:text-lg font-semibold tracking-tight">Arcadia - Neo Glide</h1>
+            <h1 className="text-base sm:text-lg font-semibold tracking-tight">Neo Glide</h1>
           </div>
 
           {/* Right side controls */}
@@ -152,7 +152,7 @@ export default function App() {
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500/70 to-sky-400/70 flex items-center justify-center shadow-glow">
                   <span className="text-xl font-bold">🚀</span>
                 </div>
-                <h2 className="text-lg font-semibold">Arcadia - Neo Glide</h2>
+                <h2 className="text-lg font-semibold">Neo Glide</h2>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
