@@ -57,7 +57,7 @@ export default function App() {
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 bg-gradient-to-br from-pink-500/70 to-sky-400/70 flex items-center justify-center shadow-glow">
               {/* <span className="text-xl font-bold">🚀</span> */}
-              <img src="/public/arcadiaNeologo.jpeg" alt="Arcadia Neo Logo" />
+              <img src="/arcadiaNeologo.jpeg" alt="Arcadia Neo Logo" />
             </div>
             <h1 className="text-base sm:text-lg font-semibold tracking-tight">Neo Glide</h1>
           </div>
@@ -152,7 +152,7 @@ export default function App() {
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-9 h-9 bg-gradient-to-br from-pink-500/70 to-sky-400/70 flex items-center justify-center shadow-glow">
                   {/* <span className="text-xl font-bold">🚀</span> */}
-                  <img src="/public/arcadiaNeologo.jpeg" alt="Arcadia Neo Logo" />
+                  <img src="/arcadiaNeologo.jpeg" alt="Arcadia Neo Logo" />
                 </div>
                 <h2 className="text-lg font-semibold">Neo Glide</h2>
               </div>
