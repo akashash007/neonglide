@@ -4,14 +4,11 @@ import React, {
 } from 'react'
 
 /**
- * Arcadia — Neon Glide
- * - Full-height canvas (100vh minus navbar).
- * - On-screen controls (LEFT / FIRE / RIGHT) on small screens.
- * - Space/Arrow scrolling blocked (preventDefault + capture).
- * - Speed capped per difficulty & viewport height.
- * - Exposes start/restart/pause/resume via ref.
- * - NEW: inputLock prop prevents Space/Enter from starting while Landing is open.
- * - FIX: hearts & pause moved below HUD text on ≥sm screens (no overlap with Score/Speed).
+ * Arcadia — Neon Glide (SFX edition)
+ * - WebAudio SFX: laser, explosion, pickup, power-up, hurt, click.
+ * - Navbar SFX toggle (sfxEnabled prop).
+ * - Audio unlock on first user gesture (exposed via ref.unlockAudio()).
+ * - Everything else: full-height canvas, mobile controls, capped speed, landing input lock, etc.
  */
 
 const DIFF = {
@@ -19,7 +16,6 @@ const DIFF = {
     normal: { speed: 280, spawn: 1.00, max: 800 },
     hyper: { speed: 360, spawn: 1.30, max: 950 },
 }
-
 const MODE = {
     endless: { enemyBullets: 0.15, spawnMul: 1.0 },
     onslaught: { enemyBullets: 0.20, spawnMul: 1.6 },
@@ -27,15 +23,119 @@ const MODE = {
     waves: { enemyBullets: 0.25, spawnMul: 0.9 },
     zen: { enemyBullets: 0.00, spawnMul: 0.7 },
 }
-
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
 const rand = (a, b) => a + Math.random() * (b - a)
+
+/* ---------- Tiny Sound Engine (no assets) ---------- */
+class Sound {
+    constructor() {
+        this.ctx = null
+        this.master = null
+        this.enabled = true
+        this.noiseBuf = null
+    }
+    unlock() {
+        if (this.ctx && this.ctx.state !== 'suspended') return
+        const AC = window.AudioContext || window.webkitAudioContext
+        if (!AC) return
+        if (!this.ctx) {
+            this.ctx = new AC()
+            this.master = this.ctx.createGain()
+            this.master.gain.value = 0.25 // default
+            this.master.connect(this.ctx.destination)
+            this.noiseBuf = this._makeNoise()
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume()
+    }
+    setEnabled(on) { this.enabled = !!on; if (this.master) this.master.gain.value = on ? 0.25 : 0.0 }
+    setVolume(v) { if (this.master) this.master.gain.value = v }
+    _makeNoise() {
+        const len = 0.3 * 44100
+        const buf = this.ctx.createBuffer(1, len, 44100)
+        const d = buf.getChannelData(0)
+        for (let i = 0; i < len; i++) { d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2) }
+        return buf
+    }
+    _env(duration = 0.15) {
+        const g = this.ctx.createGain()
+        const now = this.ctx.currentTime
+        g.gain.setValueAtTime(0.0001, now)
+        g.gain.exponentialRampToValueAtTime(1.0, now + 0.01)
+        g.gain.exponentialRampToValueAtTime(0.0001, now + duration)
+        return { g, now }
+    }
+    laser() {
+        if (!this.ctx || !this.enabled) return
+        const { g, now } = this._env(0.12)
+        const o = this.ctx.createOscillator()
+        o.type = 'square'
+        const f = this.ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 400
+        o.frequency.setValueAtTime(900, now)
+        o.frequency.exponentialRampToValueAtTime(280, now + 0.12)
+        o.connect(f); f.connect(g); g.connect(this.master)
+        o.start(); o.stop(now + 0.13)
+    }
+    explosion() {
+        if (!this.ctx || !this.enabled) return
+        const { g, now } = this._env(0.5)
+        const s = this.ctx.createBufferSource()
+        s.buffer = this.noiseBuf
+        const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(800, now)
+        f.frequency.exponentialRampToValueAtTime(120, now + 0.45)
+        s.connect(f); f.connect(g); g.connect(this.master)
+        s.start(); s.stop(now + 0.5)
+    }
+    pickup() {
+        if (!this.ctx || !this.enabled) return
+        const { g, now } = this._env(0.12)
+        const o = this.ctx.createOscillator()
+        o.type = 'triangle'
+        o.frequency.setValueAtTime(440, now)
+        o.frequency.exponentialRampToValueAtTime(880, now + 0.12)
+        o.connect(g); g.connect(this.master)
+        o.start(); o.stop(now + 0.13)
+    }
+    power(type = 'generic') {
+        if (!this.ctx || !this.enabled) return
+        const { g, now } = this._env(0.25)
+        const o = this.ctx.createOscillator()
+        o.type = 'sawtooth'
+        const base = type === 'aura' ? 300 : (type === 'stealth' ? 220 : 260)
+        o.frequency.setValueAtTime(base, now)
+        o.frequency.exponentialRampToValueAtTime(base * 2, now + 0.22)
+        o.connect(g); g.connect(this.master)
+        o.start(); o.stop(now + 0.25)
+    }
+    hurt() {
+        if (!this.ctx || !this.enabled) return
+        const { g, now } = this._env(0.2)
+        const o = this.ctx.createOscillator()
+        o.type = 'sawtooth'
+        o.frequency.setValueAtTime(160, now)
+        o.frequency.exponentialRampToValueAtTime(80, now + 0.2)
+        o.connect(g); g.connect(this.master)
+        o.start(); o.stop(now + 0.21)
+    }
+    click() {
+        if (!this.ctx || !this.enabled) return
+        const { g, now } = this._env(0.05)
+        const o = this.ctx.createOscillator()
+        o.type = 'square'
+        o.frequency.setValueAtTime(1200, now)
+        o.frequency.exponentialRampToValueAtTime(600, now + 0.05)
+        o.connect(g); g.connect(this.master)
+        o.start(); o.stop(now + 0.051)
+    }
+}
+const sharedSound = new Sound()
+/* --------------------------------------------------- */
 
 const Arcadia = forwardRef(function Arcadia({
     difficulty = 'normal',
     mode = 'endless',
     compactControls = false,
-    inputLock = false,         // <— blocks starting while true (Landing open)
+    inputLock = false,       // block starting when landing shown
+    sfxEnabled = true,       // navbar toggle
     onGameOver,
     onStart,
     onRunningChange
@@ -53,6 +153,9 @@ const Arcadia = forwardRef(function Arcadia({
     const keyRef = useRef({ left: false, right: false, fire: false })
     const pointerRef = useRef({ x: null, firing: false })
     const S = useRef(null)
+
+    // keep SFX toggle in sync
+    useEffect(() => { sharedSound.setEnabled(!!sfxEnabled) }, [sfxEnabled])
 
     // Resize (true full height)
     useEffect(() => {
@@ -83,9 +186,8 @@ const Arcadia = forwardRef(function Arcadia({
             if (blockKeys.has(e.code)) e.preventDefault()
             if (e.repeat) return
 
-            // If Landing is open, do not start/resume — just swallow
             if (inputLock) {
-                if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyP') return
+                if (['Space', 'Enter', 'KeyP'].includes(e.code)) return
             }
 
             if (e.code === 'ArrowLeft' || e.code === 'KeyA') keyRef.current.left = true
@@ -120,7 +222,7 @@ const Arcadia = forwardRef(function Arcadia({
             const r = c.getBoundingClientRect()
             pointerRef.current.x = (ev.touches?.[0]?.clientX ?? ev.clientX) - r.left
         }
-        const fireDown = (ev) => { ev.preventDefault(); pointerRef.current.firing = true; pos(ev) }
+        const fireDown = (ev) => { ev.preventDefault(); pointerRef.current.firing = true; pos(ev); sharedSound.unlock() }
         const fireUp = () => { pointerRef.current.firing = false; pointerRef.current.x = null }
         c.addEventListener('pointerdown', fireDown, { passive: false })
         c.addEventListener('pointermove', pos)
@@ -178,13 +280,16 @@ const Arcadia = forwardRef(function Arcadia({
         return () => cancelAnimationFrame(rafRef.current)
     }, [running, paused, difficulty, mode])
 
-    // Start (also restart)
+    // Start (and restart)
     function start() {
-        if (inputLock) return // Landing open — do not start
+        if (inputLock) return
         const c = canvasRef.current
         if (!c) return
         const diff = DIFF[difficulty] || DIFF.normal
         const m = MODE[mode] || MODE.endless
+
+        sharedSound.unlock()
+        sharedSound.click()
 
         const maxFromH = Math.min(diff.max, c.clientHeight * 1.5)
         const px = c.clientWidth * 0.5
@@ -213,7 +318,6 @@ const Arcadia = forwardRef(function Arcadia({
             enemies: [], orbs: [], bullets: [], ebullets: [], powers: [], particles: []
         }
 
-        // focus & lock scroll so Space doesn't scroll page
         document.body.style.overflow = 'hidden'
         c.tabIndex = 0; c.style.outline = 'none'; c.focus()
 
@@ -223,16 +327,17 @@ const Arcadia = forwardRef(function Arcadia({
         onStart?.()
     }
 
-    // API for parent (navbar)
+    // expose API to parent
     useImperativeHandle(ref, () => ({
         start: () => start(),
         restart: () => start(),
         pause: () => setPaused(true),
         resume: () => setPaused(false),
-        isRunning: () => running
+        isRunning: () => running,
+        unlockAudio: () => sharedSound.unlock()
     }), [running, paused, inputLock])
 
-    // Step
+    // Core game step
     function step(st, dt) {
         const p = st.player
 
@@ -269,6 +374,7 @@ const Arcadia = forwardRef(function Arcadia({
             for (let k = 0; k < 6; k++) {
                 st.particles.push({ x: p.x + (Math.random() < 0.5 ? -10 : 10), y: p.y - 16, vx: (Math.random() - 0.5) * 60, vy: -120 - (Math.random() * 80), life: 0.15 + Math.random() * 0.2, color: 'rgba(148,163,184,0.9)' })
             }
+            sharedSound.laser()
         }
 
         // spawns
@@ -316,7 +422,9 @@ const Arcadia = forwardRef(function Arcadia({
                     for (let k = 0; k < 10; k++) {
                         st.particles.push({ x: b.x, y: b.y, vx: (Math.random() - 0.5) * 180, vy: (Math.random() - 0.5) * 180, life: 0.25 + Math.random() * 0.25, color: 'rgba(56,189,248,0.9)' })
                     }
-                    if (e.hp <= 0) { st.enemies.splice(i, 1); st.score += 25; boom(st, e.x, e.y); break }
+                    if (e.hp <= 0) {
+                        st.enemies.splice(i, 1); st.score += 25; boom(st, e.x, e.y); sharedSound.explosion(); break
+                    }
                 }
             }
         }
@@ -329,6 +437,7 @@ const Arcadia = forwardRef(function Arcadia({
                 for (let k = 0; k < 12; k++) {
                     st.particles.push({ x: o.x, y: o.y, vx: (Math.random() - 0.5) * 160, vy: (Math.random() - 0.5) * 160, life: 0.4 + Math.random() * 0.3, color: 'rgba(56,189,248,0.8)' })
                 }
+                sharedSound.pickup()
             }
         }
         // power-ups
@@ -340,17 +449,18 @@ const Arcadia = forwardRef(function Arcadia({
                 if (pw.type === 'heal') { p.hp = Math.min(p.maxHp, p.hp + 1) }
                 else if (pw.type === 'stealth') { p.stealth = 3.0 }
                 else if (pw.type === 'aura') { auraBoom(st, p.x, p.y, 120); st.score += 15 }
+                sharedSound.power(pw.type)
             }
         }
         // damage
         if (st.mode !== 'zen' && p.stealth <= 0) {
             for (let i = st.ebullets.length - 1; i >= 0; i--) {
                 const eb = st.ebullets[i]
-                if (circleHit(p.x, p.y, p.r, eb.x, eb.y, eb.r)) { st.ebullets.splice(i, 1); hurt(st, 1); break }
+                if (circleHit(p.x, p.y, p.r, eb.x, eb.y, eb.r)) { st.ebullets.splice(i, 1); hurt(st, 1); sharedSound.hurt(); break }
             }
             for (let i = st.enemies.length - 1; i >= 0; i--) {
                 const e = st.enemies[i]
-                if (circleHit(p.x, p.y, p.r, e.x, e.y, e.r)) { st.enemies.splice(i, 1); boom(st, e.x, e.y); hurt(st, 1); break }
+                if (circleHit(p.x, p.y, p.r, e.x, e.y, e.r)) { st.enemies.splice(i, 1); boom(st, e.x, e.y); sharedSound.explosion(); hurt(st, 1); break }
             }
         }
 
@@ -417,7 +527,7 @@ const Arcadia = forwardRef(function Arcadia({
         // player
         drawWarship(ctx, st.player)
 
-        // HUD (canvas text)
+        // HUD
         ctx.fillStyle = 'rgba(226,232,240,0.95)'
         ctx.font = '600 16px system-ui,-apple-system,Segoe UI'
         ctx.textAlign = 'left'; ctx.fillText(`Score ${Math.round(st.score)}`, 12, 22)
@@ -432,13 +542,13 @@ const Arcadia = forwardRef(function Arcadia({
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
         ctx.fillStyle = 'rgba(2,6,23,0.6)'; ctx.fillRect(0, 0, c.width, c.height)
         ctx.fillStyle = '#e2e8f0'; ctx.textAlign = 'center'; ctx.font = '600 28px system-ui,-apple-system,Segoe UI'
-        ctx.fillText('Paused - press Space or P to resume', c.clientWidth / 2, c.clientHeight / 2)
+        ctx.fillText('Paused — press Space or P to resume', c.clientWidth / 2, c.clientHeight / 2)
     }
 
     // helpers
     function circleHit(x1, y1, r1, x2, y2, r2) { const dx = x1 - x2, dy = y1 - y2; return dx * dx + dy * dy <= (r1 + r2) * (r1 + r2) }
     function boom(st, x, y) { st.shake = 18; for (let k = 0; k < 28; k++) st.particles.push({ x, y, vx: (Math.random() - 0.5) * 280, vy: (Math.random() - 0.5) * 280, life: 0.4 + Math.random() * 0.5, color: 'rgba(14,165,233,0.9)' }) }
-    function auraBoom(st, x, y, R) { for (let i = st.enemies.length - 1; i >= 0; i--) { const e = st.enemies[i]; if (circleHit(x, y, R, e.x, e.y, e.r)) { st.enemies.splice(i, 1); st.score += 25; boom(st, e.x, e.y) } } }
+    function auraBoom(st, x, y, R) { for (let i = st.enemies.length - 1; i >= 0; i--) { const e = st.enemies[i]; if (circleHit(x, y, R, e.x, e.y, e.r)) { st.enemies.splice(i, 1); st.score += 25; boom(st, e.x, e.y); sharedSound.explosion() } } }
     function hurt(st, dmg) { const p = st.player; p.hp -= dmg; st.shake = 14; if (p.hp <= 0) { st.alive = false } else { p.stealth = 1.0 } }
     function drawWarship(ctx, p) {
         ctx.save(); ctx.translate(p.x, p.y)
@@ -465,7 +575,7 @@ const Arcadia = forwardRef(function Arcadia({
             {/* canvas fills container */}
             <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block" />
 
-            {/* HUD: hearts + stealth (moved down on ≥sm to avoid Score/Speed overlap) */}
+            {/* HUD: hearts + stealth (below Score/Speed on ≥sm) */}
             <div className="absolute left-3 top-3 sm:top-12 flex items-center gap-1.5 pointer-events-none select-none">
                 {Array.from({ length: 3 }).map((_, i) => (
                     <span key={i} className={"text-lg " + (i < hp ? "" : "opacity-30")}>❤️</span>
@@ -477,11 +587,11 @@ const Arcadia = forwardRef(function Arcadia({
                 </div>
             )}
 
-            {/* Floating Start/Pause (hidden when inputLock is true) */}
+            {/* Floating Start/Pause (hidden when landing is open) */}
             {!inputLock && (
                 <div className="absolute right-3 bottom-3 sm:top-12 sm:bottom-auto">
                     <button
-                        onClick={() => running ? setPaused(p => !p) : start()}
+                        onClick={() => { if (!running) { sharedSound.unlock(); sharedSound.click() }; running ? setPaused(p => !p) : start() }}
                         className="px-3 py-2 rounded-lg border border-slate-700 bg-slate-900/70 hover:border-slate-500 text-sm"
                         aria-label={running ? (paused ? 'Resume' : 'Pause') : 'Start'}
                     >
@@ -490,18 +600,18 @@ const Arcadia = forwardRef(function Arcadia({
                 </div>
             )}
 
-            {/* MOBILE gamepad (hidden ≥ sm) */}
+            {/* MOBILE gamepad */}
             <div className="sm:hidden absolute inset-x-0 bottom-2 flex justify-between px-3 gap-3 select-none">
                 <PadButton label="◀"
-                    onDown={() => { keyRef.current.left = true }}
+                    onDown={() => { sharedSound.unlock(); keyRef.current.left = true }}
                     onUp={() => { keyRef.current.left = false }}
                 />
                 <PadButton label="●"
-                    onDown={() => { keyRef.current.fire = true; pointerRef.current.firing = true }}
+                    onDown={() => { sharedSound.unlock(); keyRef.current.fire = true; pointerRef.current.firing = true }}
                     onUp={() => { keyRef.current.fire = false; pointerRef.current.firing = false }}
                 />
                 <PadButton label="▶"
-                    onDown={() => { keyRef.current.right = true }}
+                    onDown={() => { sharedSound.unlock(); keyRef.current.right = true }}
                     onUp={() => { keyRef.current.right = false }}
                 />
             </div>
@@ -520,7 +630,7 @@ const Arcadia = forwardRef(function Arcadia({
 
 export default Arcadia
 
-/** Mobile pad button */
+/* Mobile pad button */
 function PadButton({ label, onDown, onUp }) {
     return (
         <button

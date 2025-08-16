@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react'
-import Arcadia from './widgets/Arcadia.jsx'
+import Arcadia from '../widgets/Arcadia.jsx'
 
 export default function App() {
   const [difficulty, setDifficulty] = useState('normal')
   const [mode, setMode] = useState('endless')
   const [showHelp, setShowHelp] = useState(false)
   const [best, setBest] = useState(() => Number(localStorage.getItem('arcadia:best:' + mode) || 0))
-  const [running, setRunning] = useState(false)     // lock selectors mid-run
-  const [showLanding, setShowLanding] = useState(true) // start on the home screen
+  const [running, setRunning] = useState(false)
+  const [showLanding, setShowLanding] = useState(true)
+  const [sfx, setSfx] = useState(true)
 
   const headerRef = useRef(null)
   const gameRef = useRef(null)
@@ -29,7 +30,7 @@ export default function App() {
     }
   }, [])
 
-  // While Landing is open, block Space/Enter from starting the game
+  // Block Space/Enter while Landing is open
   useEffect(() => {
     if (!showLanding) return
     const h = (e) => {
@@ -57,7 +58,7 @@ export default function App() {
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-pink-500/70 to-sky-400/70 flex items-center justify-center shadow-glow">
               <span className="text-xl font-bold">🚀</span>
             </div>
-            <h1 className="text-base sm:text-lg font-semibold tracking-tight">Neon Glide</h1>
+            <h1 className="text-base sm:text-lg font-semibold tracking-tight">Arcadia — Neon Glide</h1>
           </div>
 
           {/* Right side controls */}
@@ -92,10 +93,22 @@ export default function App() {
               <option value="hyper">Hyper</option>
             </select>
 
+            {/* SFX toggle */}
+            <button
+              onClick={() => {
+                const next = !sfx
+                setSfx(next)
+                gameRef.current?.unlockAudio?.() // if they toggle on, ensure context is ready
+              }}
+              className={"px-2.5 py-1 rounded-md border text-xs sm:text-sm " + (sfx ? "border-slate-600 bg-slate-900/70 hover:border-slate-500" : "border-slate-700 bg-slate-900/50")}
+              title={sfx ? "Mute SFX" : "Enable SFX"}
+            >
+              {sfx ? "🔊 SFX" : "🔇 SFX"}
+            </button>
+
             {/* NEW GAME -> go to Landing */}
             <button
               onClick={() => {
-                // pause if currently running, then show landing
                 gameRef.current?.pause?.()
                 setShowLanding(true)
               }}
@@ -125,7 +138,8 @@ export default function App() {
           difficulty={difficulty}
           mode={mode}
           compactControls
-          inputLock={showLanding}          // prevent Space/Enter auto-start behind the landing
+          inputLock={showLanding}
+          sfxEnabled={sfx}
           onGameOver={handleGameOver}
           onRunningChange={(r) => setRunning(r)}
         />
@@ -138,7 +152,7 @@ export default function App() {
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500/70 to-sky-400/70 flex items-center justify-center shadow-glow">
                   <span className="text-xl font-bold">🚀</span>
                 </div>
-                <h2 className="text-lg font-semibold">Neon Glide</h2>
+                <h2 className="text-lg font-semibold">Arcadia — Neon Glide</h2>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -178,18 +192,25 @@ export default function App() {
                 <button
                   onClick={() => {
                     setShowLanding(false)
-                    requestAnimationFrame(() => gameRef.current?.start()) // start after overlay hides
+                    // ensure audio context is unlocked by a gesture before starting
+                    gameRef.current?.unlockAudio?.()
+                    requestAnimationFrame(() => gameRef.current?.start())
                   }}
                   className="px-4 py-2 rounded-md bg-sky-600 hover:bg-sky-500 text-white"
                 >
                   Start Game
                 </button>
+
                 <button
-                  onClick={() => setShowHelp(true)}
+                  onClick={() => {
+                    setShowHelp(true)
+                    gameRef.current?.unlockAudio?.() // allow help clicks to unlock too
+                  }}
                   className="px-3 py-2 rounded-md border border-slate-700 hover:border-slate-500"
                 >
                   How to play
                 </button>
+
                 <span className="ml-auto text-sm opacity-80">
                   Best ({mode}): <strong className="tabular-nums">{best}</strong>
                 </span>
